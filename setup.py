@@ -5,6 +5,8 @@ from os import path
 from setuptools import setup
 import sys
 
+print('INSTALINGINGI')
+
 basedir = path.dirname(path.abspath(__file__))
 extra_args = {}
 
