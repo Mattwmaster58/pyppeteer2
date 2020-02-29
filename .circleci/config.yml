@@ -3,10 +3,11 @@ version: 2.1
 workflows:
   main:
     jobs:
-      - check
-      - test_36
-      - test_37
+#      - check
+#      - test_36
+#      - test_37
       - test_38
+      - test_38_xdost
 
 
 jobs:
@@ -55,12 +56,12 @@ jobs:
     environment:
       TOXENV: py38
 
-  test_38_unit:
+  test_38_xdist:
     <<: *test_template
     docker:
       - image: circleci/python:3.8
     environment:
-      TOXENV: py38unit
+      TOXENV: py38_xdist
 
 
   check:
