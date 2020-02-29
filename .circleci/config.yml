@@ -40,13 +40,13 @@ jobs:
           command: |
             mkdir -p ./reports/pytest
             tox -- --junitxml=./reports/pytest/results.xml
+      - save_cache:
+          key: deps-{{checksum "poetry.lock"}}
+          paths: ~/.cache/pypoetry/virtualenvs
       - store_test_results:
           path: ./reports/pytest/results.xml
       - store_artifacts:
           path: ./reports/pytest/results.xml
-      - save_cache:
-          key: deps-{{checksum "poetry.lock"}}
-          paths: ~/.cache/pypoetry/virtualenvs
   test_37:
     <<: *test_template
     docker:
