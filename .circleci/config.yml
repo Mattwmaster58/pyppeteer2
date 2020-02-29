@@ -43,14 +43,13 @@ jobs:
       TOXENV: py37
 
   check:
-    docker:
-      - image: circleci/python:3.8
+    <<: *test_template
     environment:
       TOXENV: flake8
     steps:
       - checkout
       - run:
-            name: install tox
+            name: Install tox
             command: pip install tox
       - run:
           name: Check code style
