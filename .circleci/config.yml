@@ -19,6 +19,9 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Append .local/bin to path
+          command: echo 'export PATH=$HOME/.local/bin:$PATH' >> $BASH_ENV
+      - run:
           name: Install tox
           command: pip install tox
       - run:
