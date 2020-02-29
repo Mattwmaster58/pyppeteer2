@@ -26,7 +26,7 @@ jobs:
           command: pip install tox
       - run:
           name: Run tests
-          command: tox -- --junitxml=/tmp/test_reports_${TOXENV}
+          command: tox -- --junitxml=/tmp/test_reports_`TOXENV`
       - store_test_results:
           path: /tmp/test_reports
   test_37:
