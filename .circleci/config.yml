@@ -7,7 +7,6 @@ workflows:
 #      - test_36
 #      - test_37
       - test_38
-      - test_38_xdist
 
 
 jobs:
@@ -19,6 +18,9 @@ jobs:
 
     steps:
       - checkout
+      - restore_cache:
+          keys:
+            - deps-{{checksum "poetry.lock"}}
       - run:
           name: Install headless Chrome dependancies
           # chrome headless libs, see
@@ -42,6 +44,9 @@ jobs:
           path: ./reports/pytest/results.xml
       - store_artifacts:
           path: ./reports/pytest/results.xml
+      - save_cache:
+          key: deps-{{checksum "poetry.lock"}}
+          paths: ~/.cache/pypoetry/virtualenvs
   test_37:
     <<: *test_template
     docker:
@@ -55,13 +60,6 @@ jobs:
       - image: circleci/python:3.8
     environment:
       TOXENV: py38
-
-  test_38_xdist:
-    <<: *test_template
-    docker:
-      - image: circleci/python:3.8
-    environment:
-      TOXENV: py38_xdist
 
 
   check:
