@@ -38,7 +38,7 @@ jobs:
             mkdir -p ./reports/pytest
             tox -- --junitxml=./reports/pytest/results.xml
       - store_test_results:
-          path: reports
+          path: ./reports/pytest/results.xml
   test_37:
     <<: *test_template
     docker:
