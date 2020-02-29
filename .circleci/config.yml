@@ -3,11 +3,11 @@ version: 2.1
 workflows:
   main:
     jobs:
-#      - lint
-#      - test_36
-#      - test_37
-      - test_38
+      - lint
       - mypy
+      - test_36
+      - test_37
+      - test_38
 
 
 jobs:
