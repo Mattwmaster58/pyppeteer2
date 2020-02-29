@@ -3,12 +3,14 @@ version: 2.1
 workflows:
   main:
     jobs:
-      - test
       - check
+      - test_36
+      - test_37
+      - test_38
 
 
 jobs:
-  test-36: &test_template
+  test_36: &test_template
     docker:
       - image: circleci/python:3.6
 
