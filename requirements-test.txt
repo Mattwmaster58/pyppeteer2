@@ -1,3 +1,4 @@
 pytest
+pytest-parallel
 syncer
 tornado>=5
