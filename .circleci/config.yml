@@ -8,7 +8,7 @@ workflows:
 
 
 jobs:
-  test-3.6: &test-template
+  test-3.6: &test_template
     docker:
       - image: circleci/python:3.6
 
@@ -20,13 +20,13 @@ jobs:
       - run:
           name: run tests
           command: ./manage.py test
-  test-3.7:
-    <<: *test-template
+  test_3.7:
+    <<: *test_template
     docker:
       - image: circleci/python:3.7
 
-  test-3.8:
-    <<: *test-template
+  test_3.8:
+    <<: *test_template
     docker:
       - image: circleci/python:3.8
 
