@@ -15,6 +15,7 @@ jobs:
       - image: circleci/python:3.6
     environment:
       TOXENV: py36
+      POETRY_CACHE_DIR: ~/.cache/pypoetry/virtualenvs
 
     steps:
       - checkout
