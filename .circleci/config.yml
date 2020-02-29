@@ -13,31 +13,38 @@ jobs:
   test_36: &test_template
     docker:
       - image: circleci/python:3.6
+    environment:
+      TOXENV: py36
 
     steps:
       - checkout
       - run:
-          name: install test dependacies
-          command: pip install -r requirements-test.txt
-      - run:
           name: run tests
-          command: ./manage.py test
+          command: tox
   test_37:
     <<: *test_template
     docker:
       - image: circleci/python:3.7
+    environment:
+      TOXENV: py37
 
   test_38:
     <<: *test_template
     docker:
       - image: circleci/python:3.8
+    environment:
+      TOXENV: py37
 
   check:
     docker:
       - image: circleci/python:3.8
+    environment:
+      TOXENV: flake8
     steps:
       - checkout
       - run:
           name: Install black
+          command: pip install flake8
+      - run:
           command: black --check
 
