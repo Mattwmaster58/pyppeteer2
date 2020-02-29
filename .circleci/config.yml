@@ -39,6 +39,8 @@ jobs:
             tox -- --junitxml=./reports/pytest/results.xml
       - store_test_results:
           path: ./reports/pytest/results.xml
+      - store_artifacts:
+          path: ./reports/pytest/results.xml
   test_37:
     <<: *test_template
     docker:
