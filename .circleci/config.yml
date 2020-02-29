@@ -19,7 +19,10 @@ jobs:
     steps:
       - checkout
       - run:
-          name: run tests
+          name: Install tox
+          command: pip install tox
+      - run:
+          name: Run tests
           command: tox
   test_37:
     <<: *test_template
@@ -42,6 +45,9 @@ jobs:
       TOXENV: flake8
     steps:
       - checkout
+      - run:
+            name: install tox
+            command: pip install tox
       - run:
           name: Check code style
           command: tox
