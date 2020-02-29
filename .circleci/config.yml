@@ -3,10 +3,11 @@ version: 2.1
 workflows:
   main:
     jobs:
-#      - check
+#      - lint
 #      - test_36
 #      - test_37
       - test_38
+      - mypy
 
 
 jobs:
@@ -15,7 +16,6 @@ jobs:
       - image: circleci/python:3.6
     environment:
       TOXENV: py36
-      POETRY_CACHE_DIR: ~/.cache/pypoetry/virtualenvs
 
     steps:
       - checkout
@@ -43,7 +43,7 @@ jobs:
             tox -- --junitxml=./reports/pytest/results.xml
       - save_cache:
           key: poetry_deps_{{checksum "poetry.lock"}}
-          paths: ~/.cache/pypoetry/virtualenvs
+          paths: ~/.cache/pypoetry/
       - store_test_results:
           path: ./reports/pytest/results.xml
       - store_artifacts:
@@ -62,8 +62,20 @@ jobs:
     environment:
       TOXENV: py38
 
+  mypy:
+    <<: *test_template
+    environment:
+      TOXENV: mypy
+    steps:
+      - checkout
+      - run:
+          name: Install tox
+          command: pip install tox
+      - run:
+          name: Check typing
+          command: tox
 
-  check:
+  lint:
     <<: *test_template
     environment:
       TOXENV: flake8
