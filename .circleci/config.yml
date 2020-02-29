@@ -34,12 +34,9 @@ jobs:
           command: pip install tox
       - run:
           name: Run tests
-          command: |
-            echo 'export PATH=$HOME/.local/bin:$PATH' >> $BASH_ENV
-            mkdir /tmp/test_reports
-            tox -- --junitxml=/tmp/test_reports/junit.xml
+          command: tox -- --junitxml=/reports/pytest/results.xml
       - store_test_results:
-          path: /tmp/test_reports
+          path: /reports
   test_37:
     <<: *test_template
     docker:
