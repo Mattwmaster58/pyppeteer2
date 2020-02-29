@@ -8,22 +8,34 @@ workflows:
 
 
 jobs:
-  test:
-    executor: python/default
+  test-3.6: &test-template
+    docker:
+      - image: circleci/python:3.6
+
     steps:
       - checkout
-      - python/load-cache
-      - python/install-deps
-      - python/save-cache
       - run:
+          name: install test dependacies
+          command: pip install -r requirements-test.txt
+      - run:
+          name: run tests
           command: ./manage.py test
-          name: Test
+  test-3.7:
+    <<: *test-template
+    docker:
+      - image: circleci/python:3.7
+
+  test-3.8:
+    <<: *test-template
+    docker:
+      - image: circleci/python:3.8
+
   check:
     docker:
       - image: circleci/python:3.8
     steps:
       - checkout
       - run:
-          name: "Install black"
-          command: "black --check"
+          name: Install black
+          command: black --check
 
