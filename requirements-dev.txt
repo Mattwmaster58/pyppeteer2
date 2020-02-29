@@ -6,6 +6,5 @@ flake8
 mypy
 pydocstyle
 readme_renderer
-doit
 pylint
 git+https://github.com/miyakogi/pyenchant.git

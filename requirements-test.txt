@@ -1,4 +1,4 @@
 pytest
 pytest-parallel
-syncer
+git+https://github.com/diogovieira/syncer
 tornado>=5
