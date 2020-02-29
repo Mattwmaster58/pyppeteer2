@@ -43,8 +43,6 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Install black
-          command: pip install flake8
-      - run:
-          command: black --check
+          name: Check code style
+          command: tox
 
