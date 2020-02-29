@@ -1,5 +1,0 @@
-pytest
-pytest-parallel
-pytest-xdist
-git+https://github.com/diogovieira/syncer
-tornado>=5
