@@ -7,7 +7,7 @@ workflows:
 #      - test_36
 #      - test_37
       - test_38
-      - test_38_xdost
+      - test_38_xdist
 
 
 jobs:
