@@ -25,7 +25,8 @@ jobs:
           name: Run tests
           command: |
             echo 'export PATH=$HOME/.local/bin:$PATH' >> $BASH_ENV
-            tox -- --junitxml=/tmp/test_reports
+            mkdir /tmp/test_reports
+            tox -- --junitxml=/tmp/test_reports/junit.xml
       - store_test_results:
           path: /tmp/test_reports
   test_37:
@@ -40,7 +41,15 @@ jobs:
     docker:
       - image: circleci/python:3.8
     environment:
-      TOXENV: py37
+      TOXENV: py38
+
+  test_38_unit:
+    <<: *test_template
+    docker:
+      - image: circleci/python:3.8
+    environment:
+      TOXENV: py38unit
+
 
   check:
     <<: *test_template
