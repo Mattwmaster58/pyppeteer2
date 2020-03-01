@@ -75,7 +75,7 @@ jobs:
           name: Check typing
           command: |
             mkdir -p /tmp/mypy
-            tox -- --junit_xml /tmp/mypy/results.xml
+            tox -- --junit-xml /tmp/mypy/results.xml
       - store_test_results:
           path: /tmp/mympy/results.xml
 
