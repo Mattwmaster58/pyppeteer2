@@ -74,10 +74,12 @@ jobs:
       - run:
           name: Check typing
           command: |
-            mkdir -p /tmp/mypy
-            tox -- --junit-xml /tmp/mypy/results.xml
+            mkdir -p /tmp/tests
+            tox -- --junit-xml  /tmp/tests/mypy/results.xml
       - store_test_results:
-          path: /tmp/mympy/results.xml
+          path: /tmp/tests
+      - store_artifacts:
+          path: /tmp/tests
 
   lint:
     <<: *test_template
