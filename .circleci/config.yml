@@ -73,7 +73,11 @@ jobs:
           command: pip install tox
       - run:
           name: Check typing
-          command: tox
+          command: |
+            mkdir -p /tmp/mypy
+            tox -- --junit_xml /tmp/mypy/results.xml
+      - store_test_results:
+          path: /tmp/mympy/results.xml
 
   lint:
     <<: *test_template
