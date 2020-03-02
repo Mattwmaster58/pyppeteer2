@@ -72,7 +72,10 @@ jobs:
           command: pip install tox
       - run:
           name: Check typing
-          command: tox -e mypy
+          command: |
+            echo env var: $MYPY_JUNIT_XML_PATH
+            echo env var: `$MYPY_JUNIT_XML_PATH`
+            tox -e mypy
       - store_test_results:
           path: /tmp/tests
 
