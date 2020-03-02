@@ -16,6 +16,7 @@ jobs:
       - image: circleci/python:3.6
     environment:
       TOXENV: py36
+      PYTEST_ADDOPTS: -n 8 --junitxml=/tmp/test/pytest/results.xml
 
     steps:
       - checkout
@@ -38,16 +39,13 @@ jobs:
           command: pip install tox
       - run:
           name: Run tests
-          command: |
-            mkdir -p /tmp/tests/
-            tox -- --junitxml=/tmp/tests/pytest/results.xml
+          command: tox
       - save_cache:
           key: poetry_deps_{{checksum "poetry.lock"}}
           paths: ~/.cache/pypoetry/
       - store_test_results:
           path: /tmp/tests/
-      - store_artifacts:
-          path: /tmp/tests/pytest/results.xml
+
   test_37:
     <<: *test_template
     docker:
@@ -63,9 +61,10 @@ jobs:
       TOXENV: py38
 
   mypy:
-    <<: *test_template
+    docker:
+      - image: circleci/python:3.6
     environment:
-      TOXENV: mypy
+      MYPY_JUNIT_XML_PATH: /tmp/tests/mypy/results.xml
     steps:
       - checkout
       - run:
@@ -73,9 +72,7 @@ jobs:
           command: pip install tox
       - run:
           name: Check typing
-          command: |
-            mkdir -p /tmp/tests
-            tox -- --junit-xml  /tmp/tests/mypy/results.xml
+          command: tox -e mypy
       - store_test_results:
           path: /tmp/tests
 
