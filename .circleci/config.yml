@@ -16,7 +16,7 @@ jobs:
       - image: circleci/python:3.6
     environment:
       TOXENV: py36
-      PYTEST_ADDOPTS: -n 8 --junitxml=/tmp/test/pytest/results.xml
+      PYTEST_ADDOPTS: -n 8 --junitxml=/tmp/tests/pytest/results.xml
 
     steps:
       - checkout
