@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  codecov: codecov/codecov@1.0.5
+
 workflows:
   main:
     jobs:
@@ -45,6 +48,7 @@ jobs:
           paths: ~/.cache/pypoetry/
       - store_test_results:
           path: /tmp/tests/
+      - codecov/upload:
 
   test_37:
     <<: *test_template
