@@ -19,8 +19,7 @@ jobs:
       - image: circleci/python:3.6
     environment:
       TOXENV: py36
-      PYTEST_ADDOPTS: -n 8 --junitxml=/tmp/tests/pytest/results.xml
-
+      PYTEST_ADDOPTS: -n 8 --junitxml=/tmp/tests/pytest/results.xml --cov=pyppeteer2
     steps:
       - checkout
       - restore_cache:
@@ -56,6 +55,7 @@ jobs:
       - image: circleci/python:3.7
     environment:
       TOXENV: py37
+      PYTEST_ADDOPTS: &pytest_default -n 8 --junitxml=/tmp/tests/pytest/results.xml
 
   test_38:
     <<: *test_template
@@ -63,6 +63,7 @@ jobs:
       - image: circleci/python:3.8
     environment:
       TOXENV: py38
+      PYTEST_ADDOPTS: *pytest_default
 
   mypy:
     docker:
