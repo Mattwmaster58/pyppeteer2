@@ -48,6 +48,7 @@ jobs:
       - store_test_results:
           path: /tmp/tests/
       - codecov/upload:
+          file: ./pytest-cov.pth
 
   test_37:
     <<: *test_template
