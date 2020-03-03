@@ -14,13 +14,13 @@ workflows:
 
 
 jobs:
-  test_36: &test_template
+  test_36:
     docker:
       - image: circleci/python:3.6
     environment:
       TOXENV: py36
-      PYTEST_ADDOPTS: -n 8 --junitxml=/tmp/tests/pytest/results.xml --cov=pyppeteer2
-    steps:
+      PYTEST_ADDOPTS: -n 8 --junitxml=/tmp/tests/pytest/results.xml --cov=./
+    steps: &step_template
       - checkout
       - restore_cache:
           keys:
@@ -47,16 +47,18 @@ jobs:
           paths: ~/.cache/pypoetry/
       - store_test_results:
           path: /tmp/tests/
+      # this step will simply fail for other jobs
       - codecov/upload:
           file: ./pytest-cov.pth
 
   test_37:
-    <<: *test_template
     docker:
       - image: circleci/python:3.7
     environment:
       TOXENV: py37
       PYTEST_ADDOPTS: &pytest_default -n 8 --junitxml=/tmp/tests/pytest/results.xml
+    steps: *step_template
+      - codecov/upload: null
 
   test_38:
     <<: *test_template
