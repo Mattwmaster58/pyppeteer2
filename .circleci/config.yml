@@ -58,15 +58,14 @@ jobs:
       TOXENV: py37
       PYTEST_ADDOPTS: &pytest_default -n 8 --junitxml=/tmp/tests/pytest/results.xml
     steps: *step_template
-      - codecov/upload: null
 
   test_38:
-    <<: *test_template
     docker:
       - image: circleci/python:3.8
     environment:
       TOXENV: py38
       PYTEST_ADDOPTS: *pytest_default
+    steps: *step_template
 
   mypy:
     docker:
@@ -87,7 +86,8 @@ jobs:
 
 
   lint:
-    <<: *test_template
+    docker:
+      - image: circleci/python:3.6
     environment:
       TOXENV: flake8
     steps:
