@@ -135,8 +135,7 @@ html_theme = 'alabaster'
 # theme further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
-    'description': ('Headless chrome/chromium automation library '
-                    '(unofficial port of puppeteer)'),
+    'description': ('Headless chrome/chromium automation library ' '(unofficial port of puppeteer)'),
     'github_user': 'miyakogi',
     'github_repo': 'pyppeteer',
     'github_banner': True,
@@ -183,14 +182,7 @@ html_static_path = ['_static']
 # html_use_smartypants = True
 
 # Custom sidebar templates, maps document names to template names.
-html_sidebars = {
-    '**': [
-        'about.html',
-        'navigation.html',
-        'relations.html',
-        'searchbox.html',
-    ]
-}
+html_sidebars = {'**': ['about.html', 'navigation.html', 'relations.html', 'searchbox.html',]}
 
 # Additional templates that should be rendered to pages, maps page names
 # to template names.
@@ -232,10 +224,8 @@ htmlhelp_basename = 'pyppeteerdoc'
 latex_elements = {
     # The paper size ('letterpaper' or 'a4paper').
     # 'papersize': 'letterpaper',
-
     # The font size ('10pt', '11pt' or '12pt').
     # 'pointsize': '10pt',
-
     # Additional stuff for the LaTeX preamble.
     # 'preamble': '',
 }
@@ -244,9 +234,7 @@ latex_elements = {
 # (source start file, target name, title, author, documentclass
 # [howto/manual]).
 latex_documents = [
-    ('index', 'pyppeteer.tex',
-     'pyppeteer Documentation',
-     'Hiroyuki Takagi', 'manual'),
+    ('index', 'pyppeteer.tex', 'pyppeteer Documentation', 'Hiroyuki Takagi', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at
@@ -274,11 +262,7 @@ latex_documents = [
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    ('index', 'pyppeteer',
-     'pyppeteer Documentation',
-     ['Hiroyuki Takagi'], 1)
-]
+man_pages = [('index', 'pyppeteer', 'pyppeteer Documentation', ['Hiroyuki Takagi'], 1)]
 
 # If true, show URL addresses after external links.
 # man_show_urls = False
@@ -290,12 +274,15 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    ('index', 'pyppeteer',
-     'pyppeteer Documentation',
-     'Hiroyuki Takagi',
-     'pyppeteer',
-     'One line description of project.',
-     'Miscellaneous'),
+    (
+        'index',
+        'pyppeteer',
+        'pyppeteer Documentation',
+        'Hiroyuki Takagi',
+        'pyppeteer',
+        'One line description of project.',
+        'Miscellaneous',
+    ),
 ]
 
 # Documents to append as an appendix to all manuals.
