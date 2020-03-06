@@ -1,150 +1,239 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-"""Element handle module."""
-
+import asyncio
 import copy
 import logging
 import math
-import os.path
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+import os
+from typing import Dict, Optional, List, Any
 
-from pyppeteer.connection import CDPSession
-from pyppeteer.execution_context import ExecutionContext, JSHandle
-from pyppeteer.errors import ElementHandleError, NetworkError
+from pyppeteer import helper
+from pyppeteer.errors import BrowserError, ElementHandleError
 from pyppeteer.helper import debugError
 from pyppeteer.util import merge_dict
-
-if TYPE_CHECKING:
-    from pyppeteer.frame_manager import Frame, FrameManager  # noqa: F401
-
 
 logger = logging.getLogger(__name__)
 
 
-class ElementHandle(JSHandle):
-    """ElementHandle class.
+def createJSHandle(context, remoteObject):
+    frame = context.frame()
+    if remoteObject.get('subtype') == 'node' and frame:
+        frameManager = frame._frameManager
+        return ElementHandle(
+            context, context._client, remoteObject, frameManager.page(), frameManager
+        )
+    return JSHandle(
+        context,
+        context._client,
+        remoteObject,
+    )
 
-    This class represents an in-page DOM element. ElementHandle can be created
-    by the :meth:`pyppeteer.page.Page.querySelector` method.
 
-    ElementHandle prevents DOM element from garbage collection unless the
-    handle is disposed. ElementHandles are automatically disposed when their
-    origin frame gets navigated.
+class JSHandle(object):
+    """JSHandle class.
 
-    ElementHandle isinstance can be used as arguments in
-    :meth:`pyppeteer.page.Page.querySelectorEval` and
-    :meth:`pyppeteer.page.Page.evaluate` methods.
+    JSHandle represents an in-page JavaScript object. JSHandle can be created
+    with the :meth:`~pyppeteer.page.Page.evaluateHandle` method.
     """
 
-    def __init__(self, context: ExecutionContext, client: CDPSession,
-                 remoteObject: dict, page: Any,
-                 frameManager: 'FrameManager') -> None:
-        super().__init__(context, client, remoteObject)
+    def __init__(
+            self,
+            context: 'ExecutionContext',
+            client: 'CDPSession',
+            remoteObject: 'RemoteObject'
+    ):
+        self._context = context
         self._client = client
         self._remoteObject = remoteObject
+        self._disposed = False
+
+    @property
+    def executionContext(self):
+        """Get execution context of this handle."""
+        return self._context
+
+    async def evaluate(self, pageFunction: str, *args):
+        return await self.executionContext.evaluate(pageFunction, *args)
+
+    async def evaluateHandle(self, pageFunction: str, *args):
+        return await self.executionContext.evaluateHandle(pageFunction, *args)
+
+    async def getProperty(self, propertyName: str) -> 'JSHandle':
+        """Get property value of ``propertyName``."""
+        objectHandle = await self._context.evaluateHandle(
+            '''(object, propertyName) => {
+                const result = {__proto__: null};
+                result[propertyName] = object[propertyName];
+                return result;
+            }''', self, propertyName)
+        properties = await objectHandle.getProperties()
+        result = properties[propertyName]
+        await objectHandle.dispose()
+        return result
+
+    async def getProperties(self) -> Dict[str, 'JSHandle']:
+        """Get all properties of this handle."""
+        response = await self._client.send('Runtime.getProperties', {
+            'objectId': self._remoteObject.get('objectId', ''),
+            'ownProperties': True,
+        })
+        result = {}
+        for prop in response['result']:
+            if not prop.get('enumerable'):
+                continue
+            result[prop['name']] = createJSHandle(self._context, prop['value'])
+        return result
+
+    async def jsonValue(self) -> Dict:
+        """Get Jsonized value of this object."""
+        objectId = self._remoteObject.get('objectId')
+        if objectId:
+            response = await self._client.send(
+                'Runtime.callFunctionOn',
+                {
+                    'functionDeclaration': 'function() { return this; }',
+                    'objectId': objectId,
+                    'returnByValue': True,
+                    'awaitPromise': True,
+                })
+            return helper.valueFromRemoteObject(response['result'])
+        return helper.valueFromRemoteObject(self._remoteObject)
+
+    def asElement(self) -> Optional['ElementHandle']:
+        """Return either null or the object handle itself."""
+        # todo: implement
+        return None
+
+    async def dispose(self) -> None:
+        """Stop referencing the handle."""
+        if self._disposed:
+            return
+        self._disposed = True
+        await helper.releaseObject(self._client, self._remoteObject)
+
+    def toString(self) -> str:
+        """Get string representation."""
+        if self._remoteObject.get('objectId'):
+            _type = self._remoteObject.get('subtype') or self._remoteObject.get('type')
+            return f'JSHandle@{_type}'
+        return 'JSHandle:{}'.format(helper.valueFromRemoteObject(self._remoteObject))
+
+
+class ElementHandle(JSHandle):
+
+    def __init__(
+            self,
+            context: 'ExecutionContext',
+            client: 'CDPSession',
+            remoteObject: 'RemoteObject',
+            page: 'Page',
+            frameManager: 'FrameManager',
+    ):
+        super().__init__(context, client, remoteObject)
         self._page = page
         self._frameManager = frameManager
         self._disposed = False
 
-    def asElement(self) -> 'ElementHandle':
-        """Return this ElementHandle."""
+        # Aliases for query methods:
+        self.J = self.querySelector
+        self.Jx = self.xpath
+        self.Jeval = self.querySelectorEval
+        self.JJ = self.querySelectorAll
+        self.JJeval = self.querySelectorAllEval
+
+    def asElement(self) -> Optional['ElementHandle']:
         return self
 
-    async def contentFrame(self) -> Optional['Frame']:
-        """Return the content frame for the element handle.
+    async def contentFrame(self):
+        nodeInfo = await self._client.send(
+            'DOM.describeNode',
+            {
+                'objectId': self._remoteObject.get('objectId')
+            }
+        )
+        frameId = nodeInfo.get('node', {}).get('frameId')
+        if isinstance(frameId, str):
+            return self._frameManager.frame(frameId)
 
-        Return ``None`` if this handle is not referencing iframe.
-        """
-        nodeInfo = await self._client.send('DOM.describeNode', {
-            'objectId': self._remoteObject.get('objectId'),
-        })
-        node_obj = nodeInfo.get('node', {})
-        if not isinstance(node_obj.get('frameId'), str):
-            return None
-        return self._frameManager.frame(node_obj['frameId'])
-
-    async def _scrollIntoViewIfNeeded(self) -> None:
-        error = await self.executionContext.evaluate('''
-            async (element, pageJavascriptEnabled) => {
-                if (!element.isConnected)
-                    return 'Node is detached from document';
-                if (element.nodeType !== Node.ELEMENT_NODE)
-                    return 'Node is not of type HTMLElement';
-                // force-scroll if page's javascript is disabled.
-                if (!pageJavascriptEnabled) {
-                    element.scrollIntoView({
-                        block: 'center',
-                        inline: 'center',
-                        behavior: 'instant',
-                    });
-                    return false;
-                }
-                const visibleRatio = await new Promise(resolve => {
-                    const observer = new IntersectionObserver(entries => {
-                        resolve(entries[0].intersectionRatio);
-                        observer.disconnect();
-                    });
-                    observer.observe(element);
-                });
-                if (visibleRatio !== 1.0)
-                    element.scrollIntoView({
-                        block: 'center',
-                        inline: 'center',
-                        behavior: 'instant',
-                    });
+    async def _scrollIntoViewIfNeeded(self):
+        error = await self.evaluate(
+            """
+            async(element, pageJavascriptEnabled) => {
+              if (!element.isConnected)
+                return 'Node is detached from document';
+              if (element.nodeType !== Node.ELEMENT_NODE)
+                return 'Node is not of type HTMLElement';
+              // force-scroll if page's javascript is disabled.
+              if (!pageJavascriptEnabled) {
+                element.scrollIntoView({block: 'center', inline: 'center', behavior: 'instant'});
                 return false;
-            }''', self, self._page._javascriptEnabled)
+              }
+              const visibleRatio = await new Promise(resolve => {
+                const observer = new IntersectionObserver(entries => {
+                  resolve(entries[0].intersectionRatio);
+                  observer.disconnect();
+                });
+                observer.observe(element);
+              });
+              if (visibleRatio !== 1.0)
+                element.scrollIntoView({block: 'center', inline: 'center', behavior: 'instant'});
+              return false;
+            }
+            """,
+            self._page._javascriptEnabled
+        )
         if error:
-            raise ElementHandleError(error)
+            raise BrowserError(error)
 
-    async def _clickablePoint(self) -> Dict[str, float]:  # noqa: C901
-        result = None
-        try:
-            result = await self._client.send('DOM.getContentQuads', {
-                'objectId': self._remoteObject.get('objectId'),
-            })
-        except Exception as e:
-            debugError(logger, e)
-
-        if not result or not result.get('quads'):
-            raise ElementHandleError(
-                'Node is either not visible or not an HTMLElement')
-
-        quads = []
-        for _quad in result.get('quads'):
-            _q = self._fromProtocolQuad(_quad)
-            if _computeQuadArea(_q) > 1:
-                quads.append(_q)
+    async def _clickablePoint(self):
+        result, layoutMetrics = await asyncio.gather(
+            self._client.send(
+                'DOM.getContentQuads',
+                {'objectId': self._remoteObject['objectId']}
+            ),
+            self._client.send('Page.getLayoutMetrics')
+        )
+        if not result or not result.get('quads', {}).get('length'):
+            raise BrowserError('Node is either not visible or not an HTMLEelement')
+        clientWidth, clientHeight = layoutMetrics.layoutViewport
+        quads = [
+            self._fromProtocolQuad(quad)
+            for quad in self._intersectQuadWithViewport(quad, clientWidth, clientHeight)
+            if computedQuadArea(quad) > 1
+        ]
         if not quads:
-            raise ElementHandleError(
-                'Node is either not visible or not an HTMLElement')
-
+            raise BrowserError('Node is either not visible or not an HTMLElement')
         quad = quads[0]
         x = 0
         y = 0
         for point in quad:
-            x += point['x']
-            y += point['y']
-        return {'x': x / 4, 'y': y / 4}
+            x += point.x
+            y += point.y
+        return {
+            'x': x / 4,
+            'y': y / 4,
+        }
 
-    async def _getBoxModel(self) -> Optional[Dict]:
+    async def _getBoxModel(self):
         try:
-            result: Optional[Dict] = await self._client.send(
-                'DOM.getBoxModel',
-                {'objectId': self._remoteObject.get('objectId')},
+            return await self._client.send(
+                'DOM.getBoxModel', {'objectId': self._remoteObject['objectId']}
             )
-        except NetworkError as e:
+        except Exception as e:
             debugError(logger, e)
-            result = None
-        return result
 
-    def _fromProtocolQuad(self, quad: List[int]) -> List[Dict[str, int]]:
+    def _fromProtocolQuad(self, quad):
         return [
             {'x': quad[0], 'y': quad[1]},
             {'x': quad[2], 'y': quad[3]},
             {'x': quad[4], 'y': quad[5]},
             {'x': quad[6], 'y': quad[7]},
+        ]
+
+    def _intersectQuadWithViewport(self, quad, width, height):
+        return [
+            {
+                'x': min(max(point.x, 0, width)),
+                'y': min(max(point.y, 0, height)),
+            } for point in quad
         ]
 
     async def hover(self) -> None:
@@ -173,15 +262,37 @@ class ElementHandle(JSHandle):
         * ``delay`` (int|float): Time to wait between ``mousedown`` and
           ``mouseup`` in milliseconds. Defaults to 0.
         """
-        options = merge_dict(options, kwargs)
         await self._scrollIntoViewIfNeeded()
         obj = await self._clickablePoint()
         x = obj.get('x', 0)
         y = obj.get('y', 0)
+        options = merge_dict(options, kwargs)
         await self._page.mouse.click(x, y, options)
+
+    async def select(self, values: List[str]) -> List[str]:
+        return await self.evaluate(
+            """(element, values) => {
+              if (element.nodeName.toLowerCase() !== 'select')
+                throw new Error('Element is not a <select> element.');
+        
+              const options = Array.from(element.options);
+              element.value = undefined;
+              for (const option of options) {
+                option.selected = values.includes(option.value);
+                if (option.selected && !element.multiple)
+                  break;
+              }
+              element.dispatchEvent(new Event('input', { bubbles: true }));
+              element.dispatchEvent(new Event('change', { bubbles: true }));
+              return options.filter(option => option.selected).map(option => option.value);
+            }
+            """,
+            values
+        )
 
     async def uploadFile(self, *filePaths: str) -> dict:
         """Upload files."""
+        # TODO port this
         files = [os.path.abspath(p) for p in filePaths]
         objectId = self._remoteObject.get('objectId')
         return await self._client.send(
@@ -206,8 +317,7 @@ class ElementHandle(JSHandle):
         await self.executionContext.evaluate(
             'element => element.focus()', self)
 
-    async def type(self, text: str, options: Dict = None, **kwargs: Any
-                   ) -> None:
+    async def type(self, text: str, options: Dict = None, **kwargs) -> None:
         """Focus the element and then type text.
 
         Details see :meth:`pyppeteer.input.Keyboard.type` method.
@@ -216,8 +326,7 @@ class ElementHandle(JSHandle):
         await self.focus()
         await self._page.keyboard.type(text, options)
 
-    async def press(self, key: str, options: Dict = None, **kwargs: Any
-                    ) -> None:
+    async def press(self, key: str, options: Dict = None, **kwargs) -> None:
         """Press ``key`` onto the element.
 
         This method focuses the element, and then uses
@@ -300,6 +409,7 @@ class ElementHandle(JSHandle):
 
         Available options are same as :meth:`pyppeteer.page.Page.screenshot`.
         """
+        # TODO review this
         options = merge_dict(options, kwargs)
 
         needsViewportReset = False
@@ -450,15 +560,6 @@ class ElementHandle(JSHandle):
         await arrayHandle.dispose()
         return result
 
-    #: alias to :meth:`querySelector`
-    J = querySelector
-    #: alias to :meth:`querySelectorAll`
-    JJ = querySelectorAll
-    #: alias to :meth:`querySelectorEval`
-    Jeval = querySelectorEval
-    #: alias to :meth:`querySelectorAllEval`
-    JJeval = querySelectorAllEval
-
     async def xpath(self, expression: str) -> List['ElementHandle']:
         """Evaluate the XPath expression relative to this elementHandle.
 
@@ -504,7 +605,7 @@ class ElementHandle(JSHandle):
         }''', self)
 
 
-def _computeQuadArea(quad: List[Dict]) -> float:
+def computeQuadArea(quad: List[Dict]) -> float:
     area = 0
     for i, _ in enumerate(quad):
         p1 = quad[i]

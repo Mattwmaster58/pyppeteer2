@@ -50,8 +50,6 @@ jobs:
       # this step will simply fail for other jobs
       - codecov/upload:
           file: ./pytest-cov.pth
-      - store_artifacts:
-          path: ./
 
   test_37:
     docker:
