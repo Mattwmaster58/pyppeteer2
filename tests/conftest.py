@@ -16,7 +16,8 @@ from pyppeteer.util import get_free_port
 from tests.utils.server import _Application, get_application
 
 # internal, conftest.py only variables
-_launch_options = {'args': ['--no-sandbox']}
+# _launch_options = {'args': ['--no-sandbox']}
+_launch_options = {}
 _firefox = False
 _app = get_application()
 _port = get_free_port()
